@@ -1,0 +1,20 @@
+[confluent]
+zk-01.umn.edu
+zk-02.umn.edu
+zk-03.umn.edu
+
+[zookeeper]
+zk-01.umn.edu zookeeper_id=1
+zk-02.umn.edu zookeeper_id=2
+zk-03.umn.edu zookeeper_id=3
+
+[kafka]
+zk-01.umn.edu broker_id=1
+zk-02.umn.edu broker_id=2
+zk-03.umn.edu broker_id=3
+
+[schema-registry]
+zk-02.umn.edu
+
+[connect]
+zk-03.umn.edu

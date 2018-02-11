@@ -1,0 +1,47 @@
+---
+- hosts: schema-registry
+  become: true
+  vars:
+    schema_registry_host: asr-kafka-qat-02.oit.umn.edu
+    schema_registry_port: 8080
+  roles:
+    - role: ipset
+      ipset_rule_names:
+        - 8080_allowed
+      ipset_ips:
+        - "zk-01.umn.edu"
+        - "zk-02.umn.edu"
+        - "zk-03.umn.edu"
+  tasks:
+    - set_fact:
+        host_and_port: '{{ item }}:9092'
+      with_items:
+        - "{{ groups['kafka'] }}"
+      register: kafka_servers
+      tags:
+        - schema-registry
+    - set_fact:
+        host_and_port: '{{ item }}:2181'
+      with_items:
+        - "{{ groups['zookeeper'] }}"
+      register: zookeeper_servers
+      tags:
+        - schema-registry
+    - name: "Upload Schema Registry properties"
+      template:
+        src: files/schema-registry/schema-registry.properties.j2
+        dest: /etc/schema-registry/schema-registry.properties
+        owner: root
+        group: root
+        mode: "u=rw,g=r,o=r"
+      tags:
+        - schema-registry
+    - name: "Upload Connect Avro Standalone properties"
+      template:
+        src: files/schema-registry/connect-avro-standalone.properties.j2
+        dest: /etc/schema-registry/connect-avro-standalone.properties
+        owner: root
+        group: root
+        mode: "u=rw,g=r,o=r"
+      tags:
+        - schema-registry

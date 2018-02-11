@@ -1,0 +1,28 @@
+---
+- hosts: connect
+  become: true
+  vars:
+    - connect_database_host: "{{ lookup('lastpass', 'Shared-General/demo_connect', field='Hostname') }}"
+    - connect_database_name: "{{ lookup('lastpass', 'Shared-General/demo_connect', field='Database') }}"
+    - connect_database_user: "{{ lookup('lastpass', 'Shared-General/demo_connect', field='username') }}"
+    - connect_database_port: "{{ lookup('lastpass', 'Shared-General/demo_connect', field='Port') }}"
+    - connect_database_password: "{{ lookup('lastpass', 'Shared-General/demo_connect', field='password') }}"
+  tasks:
+    - name: "Upload JDBC Driver for SQLServer"
+      copy:
+        src: files/destiny-kafka-connect/mssql-jdbc-6.2.2.jre8.jar
+        dest: /usr/share/java/kafka-connect-jdbc/mssql-jdbc-6.2.2.jre8.jar
+        owner: root
+        group: root
+        mode: "u=rw,g=r,o=r"
+      tags:
+        - connect
+    - name: "Upload connect configuration"
+      template:
+        src: files/destiny-kafka-connect/source-destiny-one.properties.j2
+        dest: /etc/kafka-connect-jdbc/source-destiny-one.properties
+        owner: root
+        group: root
+        mode: "u=rw,g=r,o=r"
+      tags:
+        - connect

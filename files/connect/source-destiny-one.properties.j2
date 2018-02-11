@@ -1,0 +1,9 @@
+name=source-destiny-one
+connector.class=io.confluent.connect.jdbc.JdbcSourceConnector
+tasks.max=1
+connection.url=jdbc:sqlserver://{{ destiny_kafka_database_host }}:{{ destiny_kafka_database_port }};database={{ destiny_kafka_database_name }};user={{ destiny_kafka_database_user }};password={{ destiny_kafka_database_password }}
+mode=timestamp
+timestamp.column.name=update_time
+topic.prefix=destiny-one-
+table.types=TABLE
+table.whitelist=program_office

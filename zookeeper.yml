@@ -1,0 +1,46 @@
+---
+- hosts: zookeeper
+  become: true
+  roles:
+    - role: ipset
+      ipset_rule_names:
+        - user_defined_allowed
+      ipset_ips:
+        - "zk-01.umn.edu,tcp:2181"
+        - "zk-02.umn.edu,tcp:2181"
+        - "zk-03.umn.edu,tcp:2181"
+        - "zk-01.umn.edu,tcp:2888"
+        - "zk-02.umn.edu,tcp:2888"
+        - "zk-03.umn.edu,tcp:2888"
+        - "zk-01.umn.edu,tcp:3888"
+        - "zk-02.umn.edu,tcp:3888"
+        - "zk-03.umn.edu,tcp:3888"
+  vars:
+    data_directory: /var/lib/zookeeper
+  tasks:
+    - name: "Upload zookeeper properties"
+      template:
+        src: files/zookeeper/zookeeper.properties.j2
+        dest: /etc/kafka/zookeeper.properties
+        owner: root
+        group: root
+        mode: "u=rw,g=r,o=r"
+      tags:
+        - zookeeper
+    - name: "Create zookeeper directory"
+      file:
+        dest: {{ data_directory }}
+        state: directory
+        owner: root
+        group: root
+      tags:
+        - zookeeper
+    - name: "Identify server"
+      template:
+        src: files/zookeeper/myid.j2
+        dest: "{{ data_directory}}/myid"
+        owner: root
+        group: root
+        mode: "u=rw,g=r,o=r"
+      tags:
+        - zookeeper
