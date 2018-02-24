@@ -15,7 +15,7 @@
     - name: "Add Confluent.dist to yum"
       yum_repository:
         name: Confluent.dist
-        description: Confluent repository (dist)
+        description: Confluent.dist
         baseurl: https://packages.confluent.io/rpm/4.0/7
         gpgcheck: yes
         gpgkey: https://packages.confluent.io/rpm/4.0/archive.key
@@ -26,7 +26,7 @@
     - name: "Add Confluent"
       yum_repository:
         name: Confluent
-        description: Confluent repository
+        description: Confluent
         baseurl: https://packages.confluent.io/rpm/4.0
         gpgcheck: yes
         gpgkey: https://packages.confluent.io/rpm/4.0/archive.key
