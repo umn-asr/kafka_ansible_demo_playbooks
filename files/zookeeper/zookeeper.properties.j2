@@ -5,8 +5,8 @@ dataDir={{ data_directory }}
 clientPort=2181
 {% for server in groups['zookeeper'] %}
   {% if inventory_hostname == server %}
-    server.{{ zookeeper_id }}=0.0.0.0:2888:3888
+    server.{{ hostvars[server].zookeeper_id }}=0.0.0.0:2888:3888
   {% else %} 
-    server.{{ zookeeper_id }}={{ server }}:2888:3888
+    server.{{ hostvars[server].zookeeper_id }}={{ server }}:2888:3888
   {% endif %} 
 {% endfor %}
