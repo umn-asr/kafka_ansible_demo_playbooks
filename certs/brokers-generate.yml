@@ -1,0 +1,28 @@
+---
+- hosts: kafka
+  tags:
+    - kafka
+  become: true
+  tasks:
+    - include_vars:
+        file: '../vars/kafka.yml'
+    - name: "Check for existence of the keystore"
+      stat: "path={{ kafka_trust_key_stores_directory }}/{{ kafka_keystore_filename }}"
+      register: keystore_file
+    - name: "Create self-signed certificate"
+      command: "keytool -genkey -keystore {{ kafka_trust_key_stores_directory }}/{{ kafka_keystore_filename }} -validity {{ kafka_cert_validity_period }} -storepass {{ kafka_broker_ca_password }} -keypass {{ kafka_broker_ca_password }} -dname 'CN={{ inventory_hostname }}' -alias {{ inventory_hostname }} -storetype pkcs12"
+      when: keystore_file.stat.exists == False
+      no_log: True
+    - name: "Extract the cert file from the keystore"
+      no_log: True
+      command: "keytool -keystore {{ kafka_trust_key_stores_directory }}/{{ kafka_keystore_filename }} -certreq -file {{ kafka_trust_key_stores_directory }}/{{ inventory_hostname }}.csr -storepass {{ kafka_broker_ca_password }} -keypass {{ kafka_broker_ca_password }} -alias {{ inventory_hostname }}"
+    - name: copy files from source to local
+      fetch:
+        src: "{{ kafka_trust_key_stores_directory }}/{{ inventory_hostname }}.csr"
+        dest: /tmp/fetched
+      register: download
+    - name: delete the copy of the cert
+      when: download.changed
+      file:
+        state: absent
+        path: "{{ kafka_trust_key_stores_directory }}/{{ inventory_hostname }}.csr"

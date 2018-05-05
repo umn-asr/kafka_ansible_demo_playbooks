@@ -1,0 +1,10 @@
+---
+- hosts: schema-registry
+  tags:
+    - kafka
+    - schema-registry
+    - distributed-connect
+  become: true
+  tasks:
+    - name: flush 8080_allowed ipset
+      command: /usr/sbin/ipset flush 8080_allowed

@@ -1,0 +1,49 @@
+---
+- hosts: zookeeper
+  become: true
+  tags:
+    - zookeeper
+    - kafka
+    - schema-registry
+    - distributed-connect
+  pre_tasks:
+    - include_vars:
+        file: 'vars/kafka.yml'
+    - set_fact:
+        hosts_and_ports: '[{{ item }}],tcp:2181'
+      with_items:
+        - "{{ zookeeper_ensemble | union(kafka_cluster) | union(schema_registries) }}"
+      register: zookeeper_clients
+    - set_fact:
+        hosts_and_ports: '[{{ item }}],tcp:2888'
+      with_items:
+        - "{{ zookeeper_ensemble }}"
+      register: zookeeper_ensemble_peers
+    - set_fact:
+        hosts_and_ports: '[{{ item }}],tcp:3888'
+      with_items:
+        - "{{ zookeeper_ensemble }}"
+      register: zookeeper_ensemble_leaders
+    - set_fact:
+        hosts_and_ports: '[{{ item }}],tcp:9092'
+      with_items:
+        - "{{ kafka_cluster | union(connect_workers) | union(kafka_consumers) }}"
+      register: kafka_clients
+    - set_fact:
+        hosts_and_ports: '[{{ item }}],tcp:9093'
+      with_items:
+        - "{{ kafka_cluster | union(connect_workers) | union(kafka_consumers) }}"
+      register: kafka_ssl_clients
+  roles:
+    - role: ipset
+      ipset_rule_names:
+        - user_defined_allowed
+      ipset_ips: "{{ 
+          (zookeeper_clients.results | map(attribute='ansible_facts.hosts_and_ports') | list) |
+          union(zookeeper_ensemble_peers.results | map(attribute='ansible_facts.hosts_and_ports') | list) |
+          union(zookeeper_ensemble_leaders.results | map(attribute='ansible_facts.hosts_and_ports') | list) |
+          union(kafka_clients.results | map(attribute='ansible_facts.hosts_and_ports') | list) |
+          union(kafka_ssl_clients.results | map(attribute='ansible_facts.hosts_and_ports') | list) |
+          union(enviroment_specific_ipset_rules | list) |
+          list
+        }}"

@@ -1,17 +1,22 @@
 ---
 - hosts: confluent
+  tags:
+    - confluent
   become: true
   roles:
+    - http_proxy
     - role: geerlingguy.java
       java_packages:
         - java-1.8.0-openjdk
   tasks:
-    - name: "Get the confluent rpm key"
+    - name: "Get the confluent rpm key for public network hosts"
       rpm_key:
         state: present
         key: http://packages.confluent.io/rpm/4.0/archive.key
-      tags:
-        - confluent
+      when: "http_proxy_url_check.rc == 0"
+    - name: "Get the confluent rpm key for private network hosts"
+      command: rpm --import --httpproxy http://kraken02.oit.umn.edu --httpport 3128 http://packages.confluent.io/rpm/4.0/archive.key
+      when: "http_proxy_url_check.rc != 0"
     - name: "Add Confluent.dist to yum"
       yum_repository:
         name: Confluent.dist
@@ -21,8 +26,6 @@
         gpgkey: https://packages.confluent.io/rpm/4.0/archive.key
         enabled: yes
         file: confluent
-      tags:
-        - confluent
     - name: "Add Confluent"
       yum_repository:
         name: Confluent
@@ -32,15 +35,9 @@
         gpgkey: https://packages.confluent.io/rpm/4.0/archive.key
         enabled: yes
         file: confluent
-      tags:
-        - confluent
     - name: "Clear yum cache"
       command: yum clean all
-      tags:
-        - confluent
     - name: Install Confluent
       yum:
         name: confluent-platform-oss-2.11
         state: installed
-      tags:
-        - confluent

@@ -1,9 +1,9 @@
 tickTime=2000
 initLimit=5
 syncLimit=2
-dataDir={{ data_directory }}
+dataDir={{ zookeeper_data_directory }}
 clientPort=2181
-{% for server in groups['zookeeper'] %}
+{% for server in zookeeper_ensemble %}
   {% if inventory_hostname == server %}
     server.{{ hostvars[server].zookeeper_id }}=0.0.0.0:2888:3888
   {% else %} 

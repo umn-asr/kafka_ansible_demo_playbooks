@@ -1,0 +1,17 @@
+[Unit]
+Description=Confluent Kafka Broker
+After=network.target network-online.target zookeeper.service
+
+[Service]
+Type=forking
+User=root
+Group=root
+ExecStart=/usr/bin/kafka-server-start -daemon {{ kafka_config_directory }}/{{ kafka_config_filename }}
+ExecStop=/usr/bin/kafka-server-stop
+SuccessExitStatus=143
+Restart=always
+RestartSec=1
+StartLimitInterval=0
+
+[Install]
+WantedBy=multi-user.target

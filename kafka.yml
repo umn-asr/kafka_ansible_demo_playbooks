@@ -1,28 +1,35 @@
 ---
 - hosts: kafka
+  tags:
+    -kafka
   become: true
-  roles:
-    - role: ipset
-      ipset_rule_names:
-        - user_defined_allowed
-      ipset_ips:
-        - "zk-01.umn.edu,tcp:9092"
-        - "zk-02.umn.edu,tcp:9092"
-        - "zk-03.umn.edu,tcp:9092"
+  vars:
+    kafka_config_directory: /etc/kafka
+    kafka_config_filename: server.properties
   tasks:
+    - include_vars:
+        file: 'vars/kafka.yml'
     - set_fact:
         host_and_port: '{{ item }}:2181'
       with_items:
-        - "{{ groups['zookeeper'] }}"
+        - "{{ zookeeper_ensemble }}"
       register: zookeeper_servers
-      tags:
-        - kafka
     - name: "Upload kafka properties"
       template:
         src: files/kafka/server.properties.j2
-        dest: /etc/kafka/server.properties
+        dest: "{{ kafka_config_directory }}/{{ kafka_config_filename }}"
         owner: root
         group: root
         mode: "u=rw,g=r,o=r"
-      tags:
-        - kafka
+    - name: "Add systemd service file"
+      template:
+        src: files/kafka/kafka.service.j2
+        dest: /etc/systemd/system/kafka.service
+        owner: root
+        group: root
+        mode: "u=rw,g=r,o=r"
+    - name: "Enable and start kafka service"
+      systemd:
+        name: kafka
+        enabled: yes
+        state: started

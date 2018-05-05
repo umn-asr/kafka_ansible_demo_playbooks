@@ -1,0 +1,31 @@
+---
+- hosts: kafka
+  tags:
+    - kafka
+  become: true
+  tasks:
+    - include_vars:
+        file: '../vars/kafka.yml'
+    - name: copy the CA cert to the host
+      copy:
+        src: "/tmp/fetched/{{ kafka_ca_host }}{{ kafka_ca_cert_directory }}/{{ kafka_ca_host }}-ca.pem"
+        dest: "{{ kafka_ca_cert_directory }}"
+    - name: remove the previous CA from the keystore
+      when: delete_old is defined and delete_old == 'true'
+      command: "keytool -delete -alias CARoot -keystore {{ kafka_trust_key_stores_directory }}/{{ kafka_keystore_filename }} -storepass {{ kafka_broker_ca_password }} -keypass {{ kafka_broker_ca_password }} -noprompt"
+    - name: remove the previous CA from the truststore
+      when: delete_old is defined and delete_old == 'true'
+      command: "keytool -delete -alias CARoot -keystore {{ kafka_trust_key_stores_directory }}/{{ kafka_truststore_filename }} -storepass {{ kafka_broker_ca_password }} -keypass {{ kafka_broker_ca_password }} -noprompt"
+    - name: add the CA cert to the Kafka keystore
+      no_log: True
+      command: "keytool -keystore {{ kafka_trust_key_stores_directory }}/{{ kafka_keystore_filename }} -alias CARoot -import -file {{ kafka_ca_cert_directory}}/{{ kafka_ca_host }}-ca.pem -storepass {{ kafka_broker_ca_password }} -keypass {{ kafka_broker_ca_password }} -noprompt"
+      register: keystore
+    - name: add the CA cert to the Kafka truststore
+      no_log: True
+      command: "keytool -keystore {{ kafka_trust_key_stores_directory }}/{{ kafka_truststore_filename }} -alias CARoot -import -file {{ kafka_ca_cert_directory}}/{{ kafka_ca_host }}-ca.pem -storepass {{ kafka_broker_ca_password }} -keypass {{ kafka_broker_ca_password }} -noprompt"
+      register: truststore
+    - name: delete the copy of the CA cert
+      when: keystore.changed and truststore.changed and inventory_hostname != kafka_ca_host
+      file:
+        state: absent
+        path: "{{ kafka_ca_cert_directory }}/{{ kafka_ca_host }}-ca.pem"

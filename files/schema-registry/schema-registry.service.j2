@@ -1,0 +1,16 @@
+[Unit]
+Description=Confluent Schema Registry
+After=network.target kafka.service
+
+[Service]
+Type=forking
+User=root
+Group=root
+ExecStart=/usr/bin/schema-registry-start -daemon {{ schema_registry_config_directory }}/{{ schema_registry_config_filename }}
+ExecStop=/usr/bin/schema-registry-stop
+Restart=always
+RestartSec=1
+StartLimitInterval=0
+
+[Install]
+WantedBy=multi-user.target

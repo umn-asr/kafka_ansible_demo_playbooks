@@ -1,0 +1,21 @@
+---
+- hosts: certificate_authority
+  tags:
+    - kafka
+  become: true
+  vars:
+    force: "{{ force_create is defined and force_create == 'true' }}"
+  tasks:
+    - include_vars:
+        file: '../vars/kafka.yml'
+    - name: "Check for existence of a CA"
+      stat: "path={{ kafka_ca_cert_directory }}/{{ inventory_hostname }}-ca.pem"
+      register: ca_cert_file
+    - name: create a new CA cert (use "extra_vars=force_create=true" to force)
+      when: ca_cert_file.stat.exists == False or force
+      command: 'openssl req -new -newkey rsa:4096 -days {{ kafka_cert_validity_period }} -x509 -subj "/CN=Kafka-Security-CA" -keyout {{ kafka_ca_key_directory }}/{{ inventory_hostname }}-ca.key -out {{ kafka_ca_cert_directory }}/{{ inventory_hostname }}-ca.pem -nodes'
+      register: create_cert
+    - name: download a copy of the CA cert from the host to local
+      fetch:
+        src: "{{ kafka_ca_cert_directory }}/{{ inventory_hostname }}-ca.pem"
+        dest: /tmp/fetched

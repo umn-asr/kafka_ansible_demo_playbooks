@@ -1,0 +1,18 @@
+[Unit]
+Description=Apache Zookeeper server (Kafka)
+Documentation=http://zookeeper.apache.org
+Requires=network.target
+After=network.target network-online.target
+
+[Service]
+Type=forking
+User=root
+Group=root
+ExecStart=/usr/bin/zookeeper-server-start -daemon {{ zookeeper_config_directory }}/{{ zookeeper_config_filename }}
+ExecStop=/usr/bin/zookeeper-server-stop
+Restart=always
+RestartSec=1
+StartLimitInterval=0
+
+[Install]
+WantedBy=multi-user.target

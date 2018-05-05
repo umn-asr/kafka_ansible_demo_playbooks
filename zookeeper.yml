@@ -1,46 +1,46 @@
 ---
 - hosts: zookeeper
+  tags:
+    - zookeeper
   become: true
-  roles:
-    - role: ipset
-      ipset_rule_names:
-        - user_defined_allowed
-      ipset_ips:
-        - "zk-01.umn.edu,tcp:2181"
-        - "zk-02.umn.edu,tcp:2181"
-        - "zk-03.umn.edu,tcp:2181"
-        - "zk-01.umn.edu,tcp:2888"
-        - "zk-02.umn.edu,tcp:2888"
-        - "zk-03.umn.edu,tcp:2888"
-        - "zk-01.umn.edu,tcp:3888"
-        - "zk-02.umn.edu,tcp:3888"
-        - "zk-03.umn.edu,tcp:3888"
   vars:
-    data_directory: /var/lib/zookeeper
+    zookeeper_data_directory: /var/lib/zookeeper
+    zookeeper_config_directory: /etc/kafka/
+    zookeeper_config_filename: zookeeper.properties
   tasks:
+    - include_vars:
+        file: 'vars/kafka.yml'
     - name: "Upload zookeeper properties"
       template:
         src: files/zookeeper/zookeeper.properties.j2
-        dest: /etc/kafka/zookeeper.properties
+        dest: "{{ zookeeper_config_directory }}/{{ zookeeper_config_filename }}"
         owner: root
         group: root
         mode: "u=rw,g=r,o=r"
-      tags:
-        - zookeeper
     - name: "Create zookeeper directory"
       file:
-        dest: {{ data_directory }}
+        dest: "{{ zookeeper_data_directory }}"
         state: directory
         owner: root
         group: root
-      tags:
-        - zookeeper
     - name: "Identify server"
       template:
         src: files/zookeeper/myid.j2
-        dest: "{{ data_directory}}/myid"
+        dest: "{{ zookeeper_data_directory }}/myid"
         owner: root
         group: root
         mode: "u=rw,g=r,o=r"
-      tags:
-        - zookeeper
+    - name: "Add systemd service file"
+      template:
+        src: files/zookeeper/zookeeper.service.j2
+        dest: /etc/systemd/system/zookeeper.service
+        owner: root
+        group: root
+        mode: "u=rw,g=r,o=r"
+    - name: "Enable and start zookeeper service"
+      systemd:
+        name: zookeeper
+        enabled: yes
+        state: started
+- import_playbook: kc_user_defined_ports_flush.yml
+- import_playbook: kc_user_defined_ports_open.yml

@@ -1,0 +1,21 @@
+---
+- hosts: kafka
+  tags:
+    - kafka
+  become: true
+  tasks:
+    - include_vars:
+        file: '../vars/kafka.yml'
+    - name: copy files from local to the host
+      copy:
+        src: "/tmp/fetched/{{ kafka_ca_host }}{{ kafka_cert_file_directory }}/{{ inventory_hostname }}.pem"
+        dest: "{{ kafka_cert_file_directory }}/{{ inventory_hostname }}.pem"
+    - name: add the signed cert to the Kafka keystore
+      no_log: True
+      command: "keytool -keystore {{ kafka_trust_key_stores_directory }}/{{ kafka_keystore_filename }} -alias {{ inventory_hostname }} -import -file {{ kafka_cert_file_directory }}/{{ inventory_hostname }}.pem -storepass {{ kafka_broker_ca_password }} -keypass {{ kafka_broker_ca_password }} -noprompt"
+      register: add_signed_to_keystore
+    - name: delete the copy of the cert
+      when: add_signed_to_keystore.changed
+      file:
+        state: absent
+        path: "{{ kafka_cert_file_directory }}/{{ inventory_hostname }}.pem"

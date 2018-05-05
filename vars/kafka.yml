@@ -1,0 +1,17 @@
+---
+zookeeper_ensemble: "{{ groups['zookeeper'] | intersect(groups[cluster_environment]) }}"
+kafka_cluster: "{{ groups['kafka'] | intersect(groups[cluster_environment]) }}"
+schema_registries: "{{ groups['schema-registry'] | intersect(groups[cluster_environment]) }}"
+connect_workers: "{{ groups['distributed-connect'] | intersect(groups[cluster_environment]) }}"
+kafka_consumers: "{{ groups['kafka-consumers'] | intersect(groups[cluster_environment]) }}"
+schema_registry_host: "{{ schema_registries | first }}"
+schema_registry_port: 8080
+kafka_cert_validity_period: 365
+kafka_cert_file_directory: /etc/pki/tls/certs
+kafka_ca_cert_directory: /etc/pki/CA/certs
+kafka_ca_key_directory: /etc/pki/CA/private
+kafka_keystore_filename: kafka.server.keystore.jks
+kafka_trust_key_stores_directory: /etc/pki/tls/private
+kafka_truststore_filename: kafka.server.truststore.jks
+kafka_ca_host: "{{ groups['certificate_authority'][0] }}"
+distributed_connect_topic_prefix: distributed-connect-

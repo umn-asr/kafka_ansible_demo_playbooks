@@ -1,0 +1,16 @@
+[Unit]
+Description=Apache Kafka Connect worker in Distributed mode
+After=network.target kafka.service schema-registry.service
+
+[Service]
+Type=forking
+User=root
+Group=root
+Environment="KAFKA_HEAP_OPTS\x3d\x2dXmx2G\x20\x2dXms2G"
+ExecStart=/usr/bin/connect-distributed -daemon {{distributed_connect_config_directory }}/{{ avro_distributed_config_filename }}
+Restart=always
+RestartSec=1
+StartLimitInterval=0
+
+[Install]
+WantedBy=multi-user.target

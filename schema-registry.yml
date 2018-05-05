@@ -1,47 +1,42 @@
 ---
 - hosts: schema-registry
+  tags:
+    - schema-registry
   become: true
   vars:
-    schema_registry_host: asr-kafka-qat-02.oit.umn.edu
-    schema_registry_port: 8080
-  roles:
-    - role: ipset
-      ipset_rule_names:
-        - 8080_allowed
-      ipset_ips:
-        - "zk-01.umn.edu"
-        - "zk-02.umn.edu"
-        - "zk-03.umn.edu"
+    schema_registry_config_directory: /etc/schema-registry
+    schema_registry_config_filename: schema-registry.properties
   tasks:
+    - include_vars:
+        file: 'vars/kafka.yml'
     - set_fact:
         host_and_port: '{{ item }}:9092'
       with_items:
-        - "{{ groups['kafka'] }}"
+        - "{{ kafka_cluster }}"
       register: kafka_servers
-      tags:
-        - schema-registry
     - set_fact:
         host_and_port: '{{ item }}:2181'
       with_items:
-        - "{{ groups['zookeeper'] }}"
+        - "{{ zookeeper_ensemble }}"
       register: zookeeper_servers
-      tags:
-        - schema-registry
     - name: "Upload Schema Registry properties"
       template:
         src: files/schema-registry/schema-registry.properties.j2
-        dest: /etc/schema-registry/schema-registry.properties
+        dest: "{{ schema_registry_config_directory }}/{{ schema_registry_config_filename }}"
         owner: root
         group: root
         mode: "u=rw,g=r,o=r"
-      tags:
-        - schema-registry
-    - name: "Upload Connect Avro Standalone properties"
+    - name: "Add systemd service file"
       template:
-        src: files/schema-registry/connect-avro-standalone.properties.j2
-        dest: /etc/schema-registry/connect-avro-standalone.properties
+        src: files/schema-registry/schema-registry.service.j2
+        dest: /etc/systemd/system/schema-registry.service
         owner: root
         group: root
         mode: "u=rw,g=r,o=r"
-      tags:
-        - schema-registry
+    - name: "Enable and start schema-registry service"
+      systemd:
+        name: schema-registry
+        enabled: yes
+        state: started
+- import_playbook: kc_schema_registry_ports_flush.yml
+- import_playbook: kc_schema_registry_ports_open.yml

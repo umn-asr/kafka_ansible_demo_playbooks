@@ -1,0 +1,86 @@
+---
+- hosts: distributed-connect
+  tags:
+    - distributed-connect
+  become: true
+  vars:
+    jdbc_driver_directory: /usr/share/java/kafka-connect-jdbc
+    jdbc_driver_filename: mssql-jdbc-6.2.2.jre8.jar
+    distributed_connect_config_directory: /etc/kafka-connect-jdbc
+    distributed_connect_service_name: distributed-connect
+    distributed_connect_group_id: "{{ distributed_connect_service_name }}-cluster-01"
+    distributed_connect_truststore_directory: /etc/pki/tls/private
+    distributed_connect_truststore_filename: kafka.server.truststore.jks
+    avro_distributed_config_filename: connect-avro-distributed.properties
+    kafka_ca_cert_directory: /etc/pki/CA/certs
+    kafka_ca_cert_filename: "{{ kafka_certificate_authority_host }}-ca.pem"
+    kafka_certificate_authority_host: "{{ groups['kafka-certificate-authority'][0] }}"
+    kafka_trust_key_stores_directory: /etc/pki/tls/private
+    kafka_truststore_filename: kafka.server.truststore.jks
+    rest_interface_port: 8083
+  tasks:
+    - include_vars:
+        file: 'vars/kafka.yml'
+    - set_fact:
+        host_and_port: '{{ item }}:9093'
+      with_items:
+        - "{{ kafka_cluster }}"
+      register: kafka_servers
+    - name: "Upload JDBC Driver for SQLServer"
+      copy:
+        src: files/distributed-connect/mssql-jdbc-6.2.2.jre8.jar
+        dest: "{{ jdbc_driver_directory }}/{{ jdbc_driver_filename }}"
+        owner: root
+        group: root
+        mode: "u=rw,g=r,o=r"
+    - name: "Upload Connect Avro Distributed properties"
+      template:
+        src: files/distributed-connect/connect-avro-distributed.properties.j2
+        dest: "{{ distributed_connect_config_directory }}/{{ avro_distributed_config_filename }}"
+        owner: root
+        group: root
+        mode: "u=rw,g=r,o=r"
+    - name: download a copy of the CA cert from the host to local
+      tags: ca-certificate
+      fetch:
+        src: "{{ kafka_ca_cert_directory }}/{{ kafka_ca_cert_filename }}"
+        dest: /tmp/fetched
+      delegate_to: "{{ kafka_certificate_authority_host }}"
+    - name: copy the CA cert to the host
+      tags: ca-certificate
+      copy:
+        src: "/tmp/fetched/{{ inventory_hostname }}{{ kafka_ca_cert_directory }}/{{ kafka_ca_cert_filename }}"
+        dest: "{{ kafka_ca_cert_directory }}"
+    - name: check for an existing truststore
+      tags: ca-certificate
+      stat: "path={{ kafka_trust_key_stores_directory }}/{{ kafka_truststore_filename }}"
+      register: truststore_file
+    - name: delete the existing truststore
+      tags: ca-certificate
+      when: truststore_file.stat.exists
+      file:
+        state: absent
+        path: "{{ kafka_trust_key_stores_directory }}/{{ kafka_truststore_filename }}"
+    - name: create a new truststore with the CA cert
+      tags: ca-certificate
+      no_log: True
+      command: "keytool -keystore {{ kafka_trust_key_stores_directory }}/{{ kafka_truststore_filename }} -alias CARoot -import -file {{ kafka_ca_cert_directory}}/{{ kafka_ca_cert_filename }} -storepass {{ kafka_broker_ca_password }} -keypass {{ kafka_broker_ca_password }} -noprompt"
+      register: truststore
+    - name: delete the copy of the CA cert
+      tags: ca-certificate
+      file:
+        state: absent
+        path: "{{ kafka_ca_cert_directory }}/{{ kafka_ca_cert_filename }}"
+    - name: "Add systemd service file"
+      template:
+        src: files/distributed-connect/distributed-connect.service.j2
+        dest: "/etc/systemd/system/{{ distributed_connect_service_name }}.service"
+        owner: root
+        group: root
+        mode: "u=rw,g=r,o=r"
+    - name: "Enable and start distributed connect service"
+      systemd:
+        daemon_reload: yes
+        name: "{{ distributed_connect_service_name }}"
+        enabled: yes
+        state: started

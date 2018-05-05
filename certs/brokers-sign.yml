@@ -1,0 +1,35 @@
+---
+- hosts: certificate_authority
+  tags:
+    - kafka
+  become: true
+  tasks:
+    - include_vars:
+        file: '../vars/kafka.yml'
+    - name: copy files from local to the host
+      loop: "{{ kafka_cluster }}"
+      copy:
+        src: "/tmp/fetched/{{ item }}{{ kafka_trust_key_stores_directory }}/{{ item }}.csr"
+        dest: "{{ kafka_cert_file_directory }}"
+    - name: "Sign the certs"
+      loop: "{{ kafka_cluster }}"
+      command: "openssl x509 -req -CA {{ kafka_ca_cert_directory }}/{{ kafka_ca_host }}-ca.pem -CAkey {{ kafka_ca_key_directory }}/{{ kafka_ca_host }}-ca.key -in {{ kafka_cert_file_directory }}/{{ item }}.csr -out {{ kafka_cert_file_directory }}/{{ item }}.pem -days {{ kafka_cert_validity_period }} -CAcreateserial -passin pass:{{ kafka_broker_ca_password }}"
+      no_log: True
+    - name: copy files from host to local
+      loop: "{{ kafka_cluster }}"
+      fetch:
+        src: "{{ kafka_cert_file_directory }}/{{ item }}.pem"
+        dest: /tmp/fetched
+      register: download
+    - name: delete the copy of the CSR # this one is not working quite yet
+      loop: "{{ kafka_cluster }}"
+      when: download.changed
+      file:
+        state: absent
+        path: "{{ kafka_cert_file_directory }}/{{ item }}.csr"
+    - name: delete the copy of the cert
+      loop: "{{ kafka_cluster }}"
+      when: download.changed
+      file:
+        state: absent
+        path: "{{ kafka_cert_file_directory }}/{{ item }}.pem"

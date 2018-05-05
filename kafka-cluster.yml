@@ -1,0 +1,17 @@
+---
+- import_playbook: version-check.yml
+- import_playbook: confluent.yml
+- import_playbook: certs/brokers-generate.yml
+- import_playbook: certs/ca-create.yml
+- import_playbook: certs/brokers-sign.yml
+- import_playbook: certs/ca-copy-to-brokers.yml
+- import_playbook: certs/brokers-upload-signed.yml
+- import_playbook: zookeeper.yml
+- import_playbook: kafka.yml
+- import_playbook: schema-registry.yml
+- import_playbook: kc_schema_registry_ports_flush.yml
+- import_playbook: kc_schema_registry_ports_open.yml
+- import_playbook: kc_user_defined_ports_flush.yml
+- import_playbook: kc_user_defined_ports_open.yml
+- import_playbook: kafka-topics.yml
+- import_playbook: distributed-connect.yml

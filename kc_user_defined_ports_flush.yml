@@ -1,0 +1,11 @@
+---
+- hosts: zookeeper
+  tags:
+    - zookeeper
+    - kafka
+    - schema-registry
+    - distributed-connect
+  become: true
+  tasks:
+    - name: flush user_defined_allowed ipset
+      command: /usr/sbin/ipset flush user_defined_allowed

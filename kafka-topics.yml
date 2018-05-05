@@ -1,0 +1,23 @@
+---
+- hosts: kafka
+  tags:
+    - kafka-topics
+  become: true
+  tasks:
+    - include_vars:
+        file: 'vars/kafka.yml'
+    - name: "create non_credit_registration.resource_responsibility_centers topic"
+      command: "kafka-topics --zookeeper localhost:2181 --create --if-not-exists --config retention.ms=-1 log.retention.bytes=-1 --partitions 1 --replication-factor 3 --topic non_credit_registration.resource_responsibility_centers"
+      run_once: true
+    - name: "create non_credit_registration.departments topic"
+      command: "kafka-topics --zookeeper localhost:2181 --create --if-not-exists --config retention.ms=-1 log.retention.bytes=-1 --partitions 1 --replication-factor 3 --topic non_credit_registration.departments"
+      run_once: true
+    - name: "create {{ distributed_connect_topic_prefix }}configs topic"
+      command: "kafka-topics --zookeeper localhost:2181 --create --if-not-exists --partitions 1 --replication-factor 3 --config cleanup.policy=compact ----topic {{ distributed_connect_topic_prefix }}configs"
+      run_once: true
+    - name: "create {{ distributed_connect_topic_prefix }}offsets topic"
+      command: "kafka-topics --zookeeper localhost:2181 --create --if-not-exists --partitions 25 --replication-factor 3 --config cleanup.policy=compact ----topic {{ distributed_connect_topic_prefix }}offsets"
+      run_once: true
+    - name: "create {{ distributed_connect_topic_prefix }}statuses topic"
+      command: "kafka-topics --zookeeper localhost:2181 --create --if-not-exists --partitions 5 --replication-factor 3 --config cleanup.policy=compact ----topic {{ distributed_connect_topic_prefix }}statuses"
+      run_once: true

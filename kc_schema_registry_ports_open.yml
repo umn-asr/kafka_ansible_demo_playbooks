@@ -1,0 +1,20 @@
+---
+- hosts: schema-registry
+  tags:
+    - kafka
+    - schema-registry
+    - distributed-connect
+  become: true
+  pre_tasks:
+    - include_vars:
+        file: 'vars/kafka.yml'
+    - set_fact:
+        host_names: '[{{ item }}]'
+      with_items:
+        - "{{ schema_registries | union(kafka_consumers) | union(connect_workers) }}"
+      register: registry_users
+  roles:
+    - role: ipset
+      ipset_rule_names:
+        - 8080_allowed
+      ipset_ips: "{{ registry_users.results | map(attribute='ansible_facts.host_names') | list }}"

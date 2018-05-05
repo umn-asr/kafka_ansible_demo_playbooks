@@ -18,7 +18,7 @@
 ############################# Server Basics #############################
 
 # The id of the broker. This must be set to a unique integer for each broker.
-broker.id={{ broker_id }}
+broker.id={{ zookeeper_id }}
 
 ############################# Socket Server Settings #############################
 
@@ -28,7 +28,7 @@ broker.id={{ broker_id }}
 #     listeners = listener_name://host_name:port
 #   EXAMPLE:
 #     listeners = PLAINTEXT://your.host.name:9092
-#listeners=PLAINTEXT://:9092
+listeners=PLAINTEXT://:9092,SSL://:9093
 
 # Hostname and port the broker will advertise to producers and consumers. If not set,
 # it uses the value for "listeners" if configured.  Otherwise, it will use the value
@@ -68,9 +68,13 @@ num.partitions=1
 # This value is recommended to be increased for installations with data dirs located in RAID array.
 num.recovery.threads.per.data.dir=1
 
+############################# Topic Configuration  #############################
+auto.create.topics.enable=false
+
 ############################# Internal Topic Settings  #############################
 # The replication factor for the group metadata internal topics "__consumer_offsets" and "__transaction_state"
 # For anything other than development testing, a value greater than 1 is recommended for to ensure availability such as 3.
+default.replication.factor=3
 offsets.topic.replication.factor=3
 transaction.state.log.replication.factor=3
 transaction.state.log.min.isr=3
@@ -166,3 +170,12 @@ group.initial.rebalance.delay.ms=3
 # that additional support metrics will be collected and reported.
 #
 confluent.support.customer.id=anonymous
+
+
+ssl.truststore.location={{ kafka_trust_key_stores_directory }}/{{ kafka_truststore_filename }}
+ssl.truststore.password={{ kafka_broker_ca_password }}
+ssl.keystore.location={{ kafka_trust_key_stores_directory }}/{{ kafka_keystore_filename }}
+ssl.keystore.password={{ kafka_broker_ca_password }}
+ssl.key.password={{ kafka_broker_ca_password }}
+
+security.inter.broker.protocol=SSL
