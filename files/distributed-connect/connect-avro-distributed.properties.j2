@@ -79,3 +79,9 @@ producer.bootstrap.servers={{ kafka_servers.results | map(attribute="ansible_fac
 producer.security.protocol=SSL
 producer.ssl.truststore.location={{ distributed_connect_truststore_directory }}/{{ distributed_connect_truststore_filename }}
 producer.ssl.truststore.password={{ kafka_broker_ca_password }}
+
+#### Consumer connector SSL Settings
+consumer.bootstrap.servers={{ kafka_servers.results | map(attribute="ansible_facts.host_and_port") | join(',') }}
+consumer.security.protocol=SSL
+consumer.ssl.truststore.location={{ distributed_connect_truststore_directory }}/{{ distributed_connect_truststore_filename }}
+consumer.ssl.truststore.password={{ kafka_broker_ca_password }}
